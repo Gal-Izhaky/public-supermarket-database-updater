@@ -115,6 +115,7 @@ To reduce API calls, store locations are cached using Supabase. This enhances pe
    node update-store-database.js  
    ```
    *Note: This requires modifying the handler function for local testing.*
+   *If it's the first time you are running this function, I recommend running it locally since geocoding and geofencing all the stores take a lot of time*
 ## 🚀 Purpose of the Project
 This project serves as the backend for my High School Software Engineering class final project, [SuperReminder](https://github.com/Gal-Izhaky/SuperReminder). 
 
