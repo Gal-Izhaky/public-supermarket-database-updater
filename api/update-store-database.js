@@ -1,8 +1,11 @@
 // imports
 import { downloadStores } from "./modules/manager.js";
-import { ref, set } from "firebase/database";
+import { ref, get, set } from "firebase/database";
 import { getDatabase } from "firebase-admin/database";
 import { readFile } from 'fs/promises';
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 import admin from 'firebase-admin';
 
@@ -16,6 +19,20 @@ const getServiceAccount = async () => {
         console.error('Error reading the service account JSON:', error);
     }
 }
+
+// function to fetch all stores from the database (used for geofencing) 
+const fetchStores = async (database) => {
+    if (process.env.GEOFENCE_STORES !== "true"){
+        return [];
+    }
+    const snapshot = await get(ref(database, "/supermarkets"));
+    const val = snapshot.val();
+
+    if (Array.isArray(val)) {
+        return val;
+    }
+    return [];
+};
 
 // set the vercel server uptime duration to 60 seconds
 export const config = {
@@ -33,14 +50,35 @@ const stores = [
     // "Keshet",
 ];
 
+// function to check if the environment variables are present
+const checkEnvValidity = () => {
+    const requiredVars = ['DATABASE_URL'];
+    
+    if (process.env.GEOCODE_STORES === 'true') {
+        requiredVars.push('SUPABASE_DATABASE_URL', 'SUPABASE_API_KEY', 'HERE_API_KEY', 'HERE_URL');
+    }
+    
+    if (process.env.GEOFENCE_STORES === 'true') {
+        requiredVars.push('GEOFENCING_RADIUS', 'RADAR_URL', 'RADAR_SECRET_KEY');
+    }
+    
+    const missingVars = requiredVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+        return `Missing required environment variables: ${missingVars.join(', ')}`
+    }
+    
+    return true;
+};
+
 // request handler function
 const handler = async(req, res) => {
     const now = Date.now();
+    
+    const envValidity = checkEnvValidity();
 
-    let msg = await downloadStores(stores).catch((err) => console.error(err));
-
-    if (!msg) { // there was an error with the downloading.
-        return res.status(404) 
+    if(envValidity !== true){
+        return res.status(400).json({ error: envValidity });
     }
 
     const serviceAccount = await getServiceAccount();
@@ -59,6 +97,13 @@ const handler = async(req, res) => {
 
 
     const database = getDatabase(app);
+
+    const previouslyFetchedStores = await fetchStores(database);
+    const msg = await downloadStores(stores, previouslyFetchedStores).catch((err) => console.error(err));
+
+    if (!msg) { // there was an error with the downloading.
+        return res.status(404) 
+    }
 
     // put the data into the database and return a sucess message
     const data = {

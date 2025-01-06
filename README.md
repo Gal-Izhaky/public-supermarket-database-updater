@@ -70,6 +70,23 @@ The project is designed to run on **Vercel serverless functions**, ensuring scal
    - Combines and formats XML files using `xmlHandler.combineStores` and `xmlHandler.combinePrices`.  
    - Ensures data is structured and ready for database updates.  
 
+5. **Location Services**
+
+    #### **Geocoding with HERE API**
+    - Converts store addresses into precise geographical coordinates (latitude/longitude).
+    - Uses Supabase to cache geocoded locations:
+        - Checks cache before making new API calls
+        - Stores successful geocoding results for future use
+        - Reduces API usage and improves response times
+
+    #### **Geofencing with Radar API**
+    - Creates circular geofences around store locations
+    - Manages store boundary updates:
+    - Adds geofences for new store locations
+    - Removes geofences for closed stores
+    - Maintains geofence radius based on configuration
+    - Enables location-based notifications and analytics
+
 4. **Database Update**  
    - Updates the Firebase database with processed store and price data.  
 

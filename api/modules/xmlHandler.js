@@ -97,7 +97,7 @@ const handleShufersal = async (parsedXML) => {
 };
 
 // combine and format the stores xml of all the stores
-const combineStores = async (storesData) => {
+const combineStores = async (storesData, previouslyFetchedStores) => {
     let counter = 0;
 
     const combinedPromises = storesData.map(async (data) => {
@@ -119,7 +119,7 @@ const combineStores = async (storesData) => {
     const combinedStores = await Promise.all(combinedPromises);
     const storesUnpacked = combinedStores.flat()
 
-    const storesWithCoordinates = await geocodeStores(storesUnpacked);
+    const storesWithCoordinates = await geocodeStores(storesUnpacked, previouslyFetchedStores);
 
     return [storesWithCoordinates, counter];
 };

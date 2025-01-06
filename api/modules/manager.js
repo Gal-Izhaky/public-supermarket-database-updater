@@ -4,7 +4,7 @@ import shufersalDownload from "./shufersal.js";
 import * as xmlHandler from "./xmlHandler.js";
 
 // main function
-const downloadStores = async (usernames) => {
+const downloadStores = async (usernames, previouslyFetchedStores) => {
     // download data for stores that use cerberus
     const cerberusPromises = usernames.map((username) => {
         return cerberusDownload(username) //  returns [stores, prices] for each store
@@ -57,7 +57,7 @@ const downloadStores = async (usernames) => {
 
     // combine the XMLs, format it, and return the response
     const combinedResultPromises = [
-        xmlHandler.combineStores(stores),
+        xmlHandler.combineStores(stores, previouslyFetchedStores),
         xmlHandler.combinePrices(prices),
     ];
 

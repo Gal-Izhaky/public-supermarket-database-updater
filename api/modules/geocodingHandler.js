@@ -1,6 +1,9 @@
 // imports
 import axios from "axios";
 import { createClient } from '@supabase/supabase-js';
+
+import { handleGeofencing } from "./geofencingHandler.js";
+
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -56,6 +59,9 @@ const getCache = async () => {
 
 // add addresses to the cache (in supabase)
 const updateCache = async (stores) => {
+    if(!stores.length){
+        return 
+    }
     const supabase = createClient(SUPABASE_DATABASE_URL, SUPABASE_API_KEY);
 
     const transformedData = stores.map((store) => {
@@ -74,8 +80,6 @@ const updateCache = async (stores) => {
 
     if (error) {
         console.error('Error uploading data:', error);
-    } else {
-        console.log('Data uploaded successfully!');
     }
 }
 
@@ -122,7 +126,11 @@ const resolveAddresses = async (stores) => {
 };
 
 // function that gets a list of stores and returns the list with each of the store having a lat and lng attributes (location)
-const geocodeStores = async (stores) => {
+const geocodeStores = async (stores, previouslyFetchedStores) => {
+    if(process.env.GEOCODE_STORES !== "true"){
+        return stores
+    }
+    
     const cache = await getCache();
 
     const unresolvedAdresses = [];
@@ -147,12 +155,6 @@ const geocodeStores = async (stores) => {
         // not geocoded before => add it to an array, remove from the original array, geocode it and add it to the cache
         unresolvedAdresses.push(stores[i]);  // Extract unresolved store
 
-        // show on console (for bug finding)
-        console.log("---------------------------------")
-        console.log(`UNRESOLVED: ${fullAddress}`)
-        console.log(`UNRESOLVED_TRIMMED: ${fullAddressTrimmed}`)
-        console.log("---------------------------------")
-
         stores.splice(i, 1);  // Remove the unresolved store from the original array
     }
     const resolvedNow = await resolveAddresses(unresolvedAdresses);
@@ -168,7 +170,11 @@ const geocodeStores = async (stores) => {
         }
     }
 
+    if(process.env.GEOFENCE_STORES === "true"){
+        await handleGeofencing(fullyResolved, previouslyFetchedStores)
+    }
+
     return fullyResolved
 }
 
-export default geocodeStores;
+export default geocodeStores;   
